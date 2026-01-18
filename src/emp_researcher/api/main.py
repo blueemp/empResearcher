@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Counter, Histogram, generate_latest
 from prometheus_client.fastapi import metrics
 
+from ..agents import CoordinatorAgent
 from ..models import (
     ErrorResponse,
     HealthResponse,
@@ -28,6 +29,7 @@ metrics_histogram = Histogram("api_request_duration_seconds", "API request durat
 
 _global_config: ConfigManager | None = None
 _global_llm_router: LLMRouter | None = None
+_global_coordinator: CoordinatorAgent | None = None
 
 
 @asynccontextmanager
@@ -50,6 +52,7 @@ async def lifespan(app: FastAPI):
 
     llm_config = config.get_llm_config()
     _global_llm_router = LLMRouter(llm_config)
+    _global_coordinator = CoordinatorAgent(_global_llm_router)
 
     yield
 
@@ -91,9 +94,6 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
-
-
 @app.get("/metrics", include_in_schema=False)
 async def metrics_endpoint():
     """Prometheus metrics endpoint."""
@@ -104,6 +104,8 @@ from fastapi import APIRouter
 
 health_router = APIRouter()
 tasks_router = APIRouter()
+
+_global_tasks: dict[str, CoordinatorAgent] = {}
 
 
 @health_router.get("", response_model=HealthResponse)
@@ -141,9 +143,12 @@ async def create_task(task: ResearchTask) -> TaskResponse:
     Returns:
         Task creation response with task ID
     """
-    import uuid
+    global _global_coordinator
 
-    task_id = str(uuid.uuid4())
+    task_id = await _global_coordinator.create_task(
+        task.query,
+        task.depth,
+    )
 
     metrics_counter.labels(method="POST", endpoint="/tasks", status="created").inc()
 
@@ -165,16 +170,20 @@ async def get_task_status(task_id: str) -> TaskStatusResponse:
     Returns:
         Current task status
     """
+    global _global_coordinator
+
+    status = _global_coordinator.get_status()
+
     metrics_counter.labels(method="GET", endpoint="/tasks/{id}/status", status="success").inc()
 
     return TaskStatusResponse(
         task_id=task_id,
-        status=TaskStatus.RUNNING,
-        progress=45.0,
-        current_step="Searching web sources",
-        total_steps=10,
-        completed_steps=4,
-        sources_found=23,
+        status=status["status"],
+        progress=status["progress"],
+        current_step=status.get("current_step"),
+        total_steps=status["total_steps"],
+        completed_steps=status["completed_steps"],
+        sources_found=status.get("sources_found", 0),
         created_at="",
         updated_at="",
     )
@@ -190,15 +199,16 @@ async def get_report(task_id: str):
     Returns:
         Research report
     """
+    global _global_coordinator
+
+    report = await _global_coordinator.generate_report()
+
     metrics_counter.labels(method="GET", endpoint="/tasks/{id}/report", status="success").inc()
 
-    return {
-        "task_id": task_id,
-        "status": "completed",
-        "title": "AI Impact on Healthcare Analysis",
-        "summary": "This report analyzes the transformative impact of artificial intelligence...",
-    }
+    return report
 
+
+app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
