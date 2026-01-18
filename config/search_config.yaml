@@ -1,0 +1,50 @@
+# Search Configuration
+
+search:
+  # SearXNG meta-search
+  searxng:
+    base_url: "http://searxng:8080/search"
+    timeout: 30
+    max_results: 20
+    engines_zh:
+      - baidu
+      - so
+      - google
+    engines_en:
+      - google
+      - bing
+      - duckduckgo
+
+  # Firecrawl web crawling
+  firecrawl:
+    base_url: "http://firecrawl:3002"
+    api_key: "${FIRECRAWL_API_KEY}"
+    timeout: 120
+    max_concurrency: 4
+    max_pages: 50
+
+  # Bilingual search settings
+  bilingual:
+    enabled: true
+    language_balance_weight: 0.5  # 0.5 = equal weight
+    zh_priority_sources:
+      - cn
+      - sohu.com
+      - csdn.net
+      - zhihu.com
+      - jianshu.com
+    en_priority_sources:
+      - arxiv.org
+      - github.com
+      - acm.org
+      - medium.com
+      - stackoverflow.com
+    max_results_per_lang: 30
+
+  # Search result filtering
+  filters:
+    min_relevance_score: 0.3
+    min_trust_score: 0.2
+    date_filter:
+      enabled: true
+      max_age_days: 365

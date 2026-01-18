@@ -1,0 +1,79 @@
+# LLM Providers Configuration
+
+llm:
+  # Provider definitions
+  providers:
+    openai:
+      type: "openai_compatible"
+      base_url: "https://api.openai.com/v1"
+      api_key: "${OPENAI_API_KEY}"
+      timeout: 60
+
+    siliconflow:
+      type: "openai_compatible"
+      base_url: "https://api.siliconflow.cn/v1"
+      api_key: "${SILICONFLOW_API_KEY}"
+      timeout: 60
+
+    ollama:
+      type: "ollama"
+      base_url: "http://ollama:11434"
+      timeout: 120
+
+  # Available models per provider and type
+  provider_models:
+    openai:
+      small-fast-models:
+        - "gpt-4o-mini"
+      stronger-models:
+        - "gpt-4o"
+        - "gpt-4o-2024-11-20"
+      rerank-models: []
+
+    siliconflow:
+      small-fast-models:
+        - "Qwen/Qwen2.5-7B-Instruct"
+        - "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+      stronger-models:
+        - "deepseek-ai/DeepSeek-R1"
+        - "Qwen/Qwen2.5-72B-Instruct"
+      rerank-models:
+        - "BAAI/bge-reranker-v2-m3"
+
+    ollama:
+      small-fast-models:
+        - "llama3:8b"
+        - "qwen2.5:7b"
+      stronger-models:
+        - "llama3:70b"
+        - "qwen2.5:32b"
+      rerank-models:
+        - "bge-reranker-v2-m3:latest"
+
+  # Task type to model type mapping
+  task_model_mapping:
+    query_rewrite: "small-fast-model"
+    bilingual_translation: "small-fast-model"
+    graph_community_summarization: "stronger-model"
+    final_report_generation: "stronger-model"
+    document_summarization: "stronger-model"
+    rerank_documents: "rerank-model"
+    coordinator_planning: "small-fast-model"
+
+  # Default provider for each model type
+  default_provider:
+    small-fast-model: "siliconflow"
+    stronger-model: "openai"
+    rerank-model: "siliconflow"
+
+  # Health check settings
+  health_check:
+    interval: 30  # seconds
+    timeout: 5  # seconds
+    max_retries: 3
+
+  # Retry settings
+  retry:
+    max_attempts: 3
+    initial_delay: 1  # seconds
+    max_delay: 10  # seconds

@@ -1,0 +1,107 @@
+# Application Configuration
+
+app:
+  name: "emp-researcher"
+  version: "0.1.0"
+  env: "development"  # development, staging, production
+  host: "0.0.0.0"
+  port: 8000
+
+  # CORS settings
+  cors:
+    enabled: true
+    allow_origins:
+      - "*"
+    allow_methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allow_headers:
+      - "*"
+
+# Vector Database (Milvus)
+vector_store:
+  host: "milvus"
+  port: 19530
+  collection_name: "emp_researcher"
+  dimension: 768
+  index_type: "IVF_FLAT"
+  metric_type: "COSINE"
+  timeout: 30
+
+# Graph Database (Neo4j)
+graph_store:
+  uri: "bolt://neo4j:7687"
+  user: "neo4j"
+  password: "${NEO4J_PASSWORD}"
+  database: "neo4j"
+
+# Relational Database (PostgreSQL)
+database:
+  url: "postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/empresearcher"
+  pool_size: 20
+  max_overflow: 10
+  pool_timeout: 30
+
+# Document Processing
+documents:
+  chunk_size: 512
+  chunk_overlap: 50
+  max_file_size_mb: 100
+  supported_formats:
+    - text
+    - pdf
+    - docx
+    - xlsx
+    - pptx
+    - md
+    - html
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "json"
+  handlers:
+    - console
+    - file
+  file_path: "logs/emp-researcher.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# Observability
+observability:
+  # OpenTelemetry
+  otel:
+    enabled: true
+    endpoint: "http://jaeger:4318"
+    service_name: "emp-researcher"
+    sampling_rate: 0.1  # 10% sampling
+
+  # Prometheus
+  prometheus:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+
+  # Structured logging
+  structlog:
+    enabled: true
+    include_trace_id: true
+    include_span_id: true
+
+# Task Management
+tasks:
+  max_parallel_tasks: 10
+  task_timeout_seconds: 3600  # 1 hour
+  result_retention_days: 30
+  state_persistence: true
+
+# Research Settings
+research:
+  max_iterations: 10
+  max_sources: 50
+  confidence_threshold: 0.7
+  reflection_interval: 3  # reflect after every N steps
+  auto_expand: true  # automatically expand search if coverage low
