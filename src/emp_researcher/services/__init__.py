@@ -8,6 +8,9 @@ from .document_parser import DocumentChunk, DocumentParser
 from .rerank_service import RerankerService
 from .bilingual_search import BilingualSearchService
 from .observability import ObservabilityService
+from .graphrag_engine import GraphRAGEngine
+from .multimodal_processor import MultimodalProcessor
+from .firecrawl_client import FirecrawlClient
 
 __all__ = [
     "LLMProvider",
@@ -22,4 +25,7 @@ __all__ = [
     "RerankerService",
     "BilingualSearchService",
     "ObservabilityService",
+    "GraphRAGEngine",
+    "MultimodalProcessor",
+    "FirecrawlClient",
 ]

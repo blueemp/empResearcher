@@ -1,0 +1,142 @@
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: emp-researcher
+  labels:
+    app.kubernetes.io/name: emp-researcher
+    version: "0.1.0"
+spec:
+  finalizers:
+    - metadata.name
+---
+# ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: emp-researcher-config
+data:
+  APP_ENV: "production"
+  LOG_LEVEL: "INFO"
+---
+# Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: emp-researcher-secrets
+type: Opaque
+stringData:
+  NEO4J_PASSWORD: "your-neo4j-password"
+  POSTGRES_PASSWORD: "your-postgres-password"
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emp-researcher
+  labels:
+    app.kubernetes.io/name: emp-researcher
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: emp-researcher
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: emp-researcher
+    spec:
+      containers:
+      - name: api
+        image: blueemp/emp-researcher:0.1.0
+        ports:
+        - containerPort: 8000
+        env:
+        - name: APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: emp-researcher-config
+              key: APP_ENV
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: emp-researcher-config
+              key: LOG_LEVEL
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: emp-researcher-secrets
+              key: OPENAI_API_KEY
+        - name: NEO4J_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: emp-researcher-secrets
+              key: NEO4J_PASSWORD
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: emp-researcher-secrets
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            cpu: "1000m"
+            memory: "2Gi"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: emp-researcher
+spec:
+  selector:
+    app.kubernetes.io/name: emp-researcher
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: LoadBalancer
+---
+# HorizontalPodAutoscaler
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: emp-researcher-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: emp-researcher
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+---
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: emp-researcher-ingress
+spec:
+  rules:
+  - host: api.emp-researcher.com
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: emp-researcher
